@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#c9923c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3176/3176365.png">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js').then(function(reg) {
+      console.log('Service Worker OK');
+    }).catch(function(err) {
+      console.log('Service Worker lỗi:', err);
+    });
+  });
+}
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quản Lý Hàng Tạp Hóa</title>
