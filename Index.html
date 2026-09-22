@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản Lý Hàng Tạp Hóa</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+:root {
+  --bg: #1c1f2e;
+  --card: #262a3a;
+  --text: #e8ecf4;
+  --muted: #8b9ab8;
+  --accent: #c9923c;
+  --accent-soft: rgba(201, 146, 60, 0.14);
+  --accent2: #4d8b7a;
+  --accent2-soft: rgba(77, 139, 122, 0.14);
+  --border: rgba(139, 154, 184, 0.16);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.tab-btn {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+}
+
+.tab-btn.active {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal.show { display: flex; }
+
+.modal-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.tbl-row { transition: background 0.15s ease; }
+.tbl-row:hover { background: rgba(139, 154, 184, 0.08); }
+
+.btn-primary {
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  transition: all 0.2s;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.btn-secondary:hover { border-color: var(--accent); }
+
+.input-field {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.2s;
+  font-size: 14px;
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.status-pill {
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-good {
+  background: rgba(13, 150, 105, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(13, 150, 105, 0.3);
+}
+
+.status-warn {
+  background: rgba(201, 146, 60, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(201, 146, 60, 0.3);
+}
+
+.status-bad {
+  background: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeIn 0.3s ease; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 12px 16px; }
+thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: rgba(139, 154, 184, 0.06);
+  font-weight: 500;
+}
+
+tbody tr { border-bottom: 1px solid var(--border); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.overflow-x-auto { overflow-x: auto; }
+
+@media (max-width: 768px) {
+  .hide-mobile { display: none; }
+  th, td { padding: 8px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6 pb-4" style="border-bottom:1px solid var(--border)">
+    <div class="flex items-center gap-3">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M5 7v13h14V7"/><path d="M9 11h6"/></svg>
+      </div>
+      <div>
+        <h1 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--text);margin:0">QUẢN LÝ HÀNG TẠP HÓA</h1>
+        <p style="color:var(--muted);font-size:13px;margin:4px 0 0 0">Hệ thống quản lý kho, bán hàng và công nợ</p>
+      </div>
+    </div>
+    <div style="color:var(--muted);font-size:13px" id="currentDate"></div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="flex gap-1 mb-6 overflow-x-auto" style="border-bottom:1px solid var(--border)">
+    <button class="tab-btn active px-5 py-3 font-medium text-sm" onclick="switchTab('products')" id="tab-products">
+      <span class="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L12 3 4 7l8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
+        Hàng Hóa
+      </span>
+    </button>
+    <button class="tab-btn px-5 py-3 font-medium text-sm" onclick="switchTab('categories')" id="tab-categories">
+      <span class="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Phân Loại
+      </span>
+    </button>
+    <button class="tab-btn px-5 py-3 font-medium text-sm" onclick="switchTab('customers')" id="tab-customers">
+      <span class="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Khách Hàng
+      </span>
+    </button>
+    <button class="tab-btn px-5 py-3 font-medium text-sm" onclick="switchTab('orders')" id="tab-orders">
+      <span class="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Đơn Bán
+      </span>
+    </button>
+    <button class="tab-btn px-5 py-3 font-medium text-sm" onclick="switchTab('stats')" id="tab-stats">
+      <span class="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+        Thống Kê
+      </span>
+    </button>
+  </div>
+
+  <!-- ========== PRODUCTS TAB ========== -->
+  <div id="content-products" class="fade-in">
+    <div class="flex flex-wrap gap-3 mb-4 items-center justify-between">
+      <div class="flex gap-3 items-center flex-wrap">
+        <input type="text" placeholder="Tìm kiếm hoặc quét mã vạch..." class="input-field" style="width:280px" id="productSearch" oninput="renderProducts()">
+        <button class="btn-primary" onclick="openProductModal()">+ Thêm Hàng Hóa</button>
+      </div>
+      <div class="text-sm" style="color:var(--muted)">
+        Tổng số: <span id="productCount" style="color:var(--accent);font-weight:600">0</span> mặt hàng
+      </div>
+    </div>
+    
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã Vạch</th>
+              <th>Tên Hàng</th>
+              <th class="hide-mobile">Loại</th>
+              <th style="text-align:right">Giá Nhập</th>
+              <th style="text-align:right">Giá Bán</th>
+              <th style="text-align:center">Tồn Kho</th>
+              <th class="hide-mobile" style="text-align:center">Trạng Thái</th>
+              <th style="text-align:center">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="productsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CATEGORIES TAB ========== -->
+  <div id="content-categories" class="fade-in" style="display:none">
+    <div class="flex gap-3 mb-4 items-center justify-between">
+      <button class="btn-primary" onclick="openCategoryModal()">+ Thêm Loại Hàng</button>
+      <div class="text-sm" style="color:var(--muted)">
+        Tổng số: <span id="categoryCount" style="color:var(--accent);font-weight:600">0</span> loại
+      </div>
+    </div>
+    
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã Loại</th>
+              <th>Tên Loại Hàng</th>
+              <th class="hide-mobile">Mô Tả</th>
+              <th style="text-align:center">Số Mặt Hàng</th>
+              <th style="text-align:center">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="categoriesTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CUSTOMERS TAB ========== -->
+  <div id="content-customers" class="fade-in" style="display:none">
+    <div class="flex flex-wrap gap-3 mb-4 items-center justify-between">
+      <div class="flex gap-3 items-center">
+        <input type="text" placeholder="Tìm kiếm khách hàng..." class="input-field" style="width:280px" id="customerSearch" oninput="renderCustomers()">
+        <button class="btn-primary" onclick="openCustomerModal()">+ Thêm Khách Hàng</button>
+      </div>
+      <div class="text-sm" style="color:var(--muted)">
+        Tổng công nợ: <span id="totalDebt" style="color:#f87171;font-weight:600">0 đ</span>
+      </div>
+    </div>
+    
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Tên Khách</th>
+              <th class="hide-mobile">Điện Thoại</th>
+              <th>Địa Chỉ</th>
+              <th style="text-align:right">Công Nợ</th>
+              <th style="text-align:center">Bản Đồ</th>
+              <th style="text-align:center">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="customersTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ORDERS TAB ========== -->
+  <div id="content-orders" class="fade-in" style="display:none">
+    <div class="flex flex-wrap gap-3 mb-4 items-center justify-between">
+      <button class="btn-primary" onclick="openOrderModal()">+ Tạo Đơn Bán</button>
+      <div class="text-sm" style="color:var(--muted)">
+        Số đơn: <span id="orderCount" style="color:var(--accent);font-weight:600">0</span>
+      </div>
+    </div>
+    
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã Đơn</th>
+              <th>Ngày</th>
+              <th>Khách Hàng</th>
+              <th style="text-align:right">Tổng Tiền</th>
+              <th class="hide-mobile" style="text-align:right">Giảm Giá</th>
+              <th class="hide-mobile" style="text-align:right">Thanh Toán</th>
+              <th style="text-align:right">Còn Nợ</th>
+              <th class="hide-mobile">Ghi Chú</th>
+              <th style="text-align:center">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== STATS TAB ========== -->
+  <div id="content-stats" class="fade-in" style="display:none">
+    <div class="flex gap-3 mb-4 items-center">
+      <select class="input-field" style="width:auto" id="statsMonth" onchange="renderStats()"></select>
+      <select class="input-field" style="width:auto" id="statsYear" onchange="renderStats()"></select>
+    </div>
+
+    <!-- Stats Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px">
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <span style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Doanh Thu</span>
+        </div>
+        <div style="font-size:24px;font-weight:700" id="statRevenue">0 đ</div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--accent2-soft);display:flex;align-items:center;justify-content:center;color:var(--accent2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M5 7v13h14V7"/></svg>
+          </div>
+          <span style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Tiền Nhập Hàng</span>
+        </div>
+        <div style="font-size:24px;font-weight:700" id="statImport">0 đ</div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(220,38,38,.14);display:flex;align-items:center;justify-content:center;color:#f87171">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <span style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Công Nợ Trong Tháng</span>
+        </div>
+        <div style="font-size:24px;font-weight:700;color:#f87171" id="statDebt">0 đ</div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(13,150,105,.14);display:flex;align-items:center;justify-content:center;color:#34d399">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+          </div>
+          <span style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Lợi Nhuận Ước Tính</span>
+        </div>
+        <div style="font-size:24px;font-weight:700;color:#34d399" id="statProfit">0 đ</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px">
+      <div class="card p-5">
+        <h3 style="font-weight:600;margin:0 0 16px 0">Doanh Thu Theo Ngày</h3>
+        <div id="chartRevenue" style="height:320px;width:100%"></div>
+      </div>
+      <div class="card p-5">
+        <h3 style="font-weight:600;margin:0 0 16px 0">Tiền Nhập Theo Loại Hàng</h3>
+        <div id="chartImport" style="height:320px;width:100%"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Product Modal -->
+<div class="modal" id="productModal">
+  <div class="modal-content" style="max-width:500px">
+    <h3 style="font-size:20px;font-weight:600;margin:0 0 20px 0" id="productModalTitle">Thêm Hàng Hóa</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="productId">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Mã Vạch *</label>
+        <input type="text" class="input-field" id="productBarcode" placeholder="Quét hoặc nhập mã vạch">
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Tên Hàng Hóa *</label>
+        <input type="text" class="input-field" id="productName" placeholder="Nhập tên hàng">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Loại Hàng *</label>
+          <select class="input-field" id="productCategory"></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Tồn Kho Ban Đầu</label>
+          <input type="number" class="input-field" id="productStock" value="0" min="0">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Giá Nhập (đ) *</label>
+          <input type="number" class="input-field" id="productBuyPrice" value="0" min="0">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Giá Bán (đ) *</label>
+          <input type="number" class="input-field" id="productSellPrice" value="0" min="0">
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="closeModal('productModal')">Hủy</button>
+      <button class="btn-primary" onclick="saveProduct()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal" id="categoryModal">
+  <div class="modal-content" style="max-width:420px">
+    <h3 style="font-size:20px;font-weight:600;margin:0 0 20px 0" id="categoryModalTitle">Thêm Loại Hàng</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="categoryId">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Mã Loại *</label>
+        <input type="text" class="input-field" id="categoryCode" placeholder="VD: TP, DM, NS...">
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Tên Loại Hàng *</label>
+        <input type="text" class="input-field" id="categoryName" placeholder="VD: Thực phẩm, Đồ mát">
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Mô Tả</label>
+        <textarea class="input-field" id="categoryDesc" rows="2" placeholder="Mô tả ngắn"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="closeModal('categoryModal')">Hủy</button>
+      <button class="btn-primary" onclick="saveCategory()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Modal -->
+<div class="modal" id="customerModal">
+  <div class="modal-content" style="max-width:500px">
+    <h3 style="font-size:20px;font-weight:600;margin:0 0 20px 0" id="customerModalTitle">Thêm Khách Hàng</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="customerId">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Tên Khách Hàng *</label>
+        <input type="text" class="input-field" id="customerName" placeholder="Nhập tên khách">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Điện Thoại</label>
+          <input type="text" class="input-field" id="customerPhone" placeholder="Số điện thoại">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Công Nợ Ban Đầu</label>
+          <input type="number" class="input-field" id="customerDebt" value="0" min="0">
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Địa Chỉ</label>
+        <input type="text" class="input-field" id="customerAddress" placeholder="Nhập địa chỉ để hiển thị bản đồ">
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Ghi Chú</label>
+        <textarea class="input-field" id="customerNote" rows="2" placeholder="Ghi chú thêm"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="closeModal('customerModal')">Hủy</button>
+      <button class="btn-primary" onclick="saveCustomer()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Modal -->
+<div class="modal" id="orderModal">
+  <div class="modal-content" style="max-width:700px">
+    <h3 style="font-size:20px;font-weight:600;margin:0 0 20px 0" id="orderModalTitle">Tạo Đơn Bán</h3>
+    <input type="hidden" id="orderId">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Khách Hàng *</label>
+        <select class="input-field" id="orderCustomer"></select>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Ngày Bán</label>
+        <input type="date" class="input-field" id="orderDate">
+      </div>
+    </div>
+
+    <!-- Order Items -->
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:13px;margin-bottom:8px;color:var(--muted)">Chi Tiết Đơn Hàng</label>
+      <div class="card" style="padding:12px;background:var(--bg)">
+        <div id="orderItems" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+        <button class="btn-secondary" onclick="addOrderItem()">+ Thêm Mặt Hàng</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Giảm Giá (đ)</label>
+        <input type="number" class="input-field" id="orderDiscount" value="0" min="0" oninput="calculateOrderTotal()">
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Khách Trả (đ)</label>
+        <input type="number" class="input-field" id="orderPaid" value="0" min="0" oninput="calculateOrderTotal()">
+      </div>
+    </div>
+
+    <div class="card" style="padding:16px;margin-bottom:16px;background:var(--bg)">
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px">
+        <span style="color:var(--muted)">Tạm Tính:</span>
+        <span id="orderSubtotal">0 đ</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px">
+        <span style="color:var(--muted)">Giảm Giá:</span>
+        <span id="orderDiscountDisplay" style="color:#f87171">-0 đ</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <span>Tổng Cần Thanh Toán:</span>
+        <span id="orderTotal" style="color:var(--accent)">0 đ</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px">
+        <span style="color:var(--muted)">Khách Đã Trả:</span>
+        <span id="orderPaidDisplay" style="color:#34d399">0 đ</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span style="color:var(--muted)">Còn Nợ:</span>
+        <span id="orderDebtDisplay" style="color:#f87171">0 đ</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Ghi Chú</label>
+      <textarea class="input-field" id="orderNote" rows="2" placeholder="Ghi chú cho đơn hàng"></textarea>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="closeModal('orderModal')">Hủy</button>
+      <button class="btn-primary" onclick="saveOrder()">Lưu Đơn Hàng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal" id="paymentModal">
+  <div class="modal-content" style="max-width:400px">
+    <h3 style="font-size:20px;font-weight:600;margin:0 0 20px 0">Thu Tiền Công Nợ</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="paymentCustomerId">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Khách Hàng</label>
+        <div class="input-field" id="paymentCustomerName" style="background:var(--bg)"></div>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Công Nợ Hiện Tại</label>
+        <div class="input-field" id="paymentCurrentDebt" style="background:var(--bg);color:#f87171;font-weight:700"></div>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--muted)">Số Tiền Thu (đ) *</label>
+        <input type="number" class="input-field" id="paymentAmount" value="0" min="0">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="closeModal('paymentModal')">Hủy</button>
+      <button class="btn-primary" onclick="processPayment()">Xác Nhận</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== DATA MANAGEMENT ====================
+function loadData(key, defaultValue) {
+  try {
+    return JSON.parse(localStorage.getItem('grocery_' + key)) || defaultValue;
+  } catch(e) { return defaultValue; }
+}
+function saveData(key, data) {
+  localStorage.setItem('grocery_' + key, JSON.stringify(data));
+}
+
+let categories = loadData('categories', [
+  {id:1, code:'TP', name:'Thực Phẩm', desc:'Thực phẩm ăn liền, gia vị'},
+  {id:2, code:'DM', name:'Đồ Mát', desc:'Nước giải khát, sữa'},
+  {id:3, code:'VH', name:'Vật Tư Hàng Ngày', desc:'Đồ dùng sinh hoạt'}
+]);
+let products = loadData('products', [
+  {id:1, barcode:'8934567890001', name:'Nước Ngọt Coca 330ml', categoryId:2, buyPrice:7000, sellPrice:10000, stock:50},
+  {id:2, barcode:'8934567890002', name:'Mì Gói Hảo Hảo', categoryId:1, buyPrice:3000, sellPrice:4500, stock:100},
+  {id:3, barcode:'8934567890003', name:'Khăn Giấy Khăn Thông', categoryId:3, buyPrice:18000, sellPrice:25000, stock:30}
+]);
+let customers = loadData('customers', [
+  {id:1, name:'Nguyễn Văn A', phone:'0901234567', address:'Hà Nội', debt:0, note:'Khách quen'},
+  {id:2, name:'Trần Thị B', phone:'0908765432', address:'TP.HCM', debt:50000, note:''}
+]);
+let orders = loadData('orders', []);
+
+function saveAll() {
+  saveData('categories', categories);
+  saveData('products', products);
+  saveData('customers', customers);
+  saveData('orders', orders);
+}
+
+// ==================== UTILITY ====================
+function formatMoney(n) {
+  return Number(n || 0).toLocaleString('vi-VN') + ' đ';
+}
+function getCategoryName(id) {
+  const c = categories.find(x => x.id === id);
+  return c ? c.name : 'Chưa phân loại';
+}
+function getCustomerName(id) {
+  const c = customers.find(x => x.id === id);
+  return c ? c.name : 'Khách lẻ';
+}
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+// Set current date
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('vi-VN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+// ==================== TAB SWITCHING ====================
+function switchTab(tab) {
+  ['products','categories','customers','orders','stats'].forEach(t => {
+    document.getElementById('content-' + t).style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('tab-' + t);
+    if (t === tab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  if (tab === 'stats') renderStats();
+}
+
+// ==================== MODAL ====================
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', function(e) {
+    if (e.target === m) m.classList.remove('show');
+  });
+});
+
+// ==================== CATEGORIES ====================
+function renderCategories() {
+  const tbody = document.getElementById('categoriesTable');
+  tbody.innerHTML = categories.map(c => {
+    const count = products.filter(p => p.categoryId === c.id).length;
+    return `<tr class="tbl-row">
+      <td style="font-weight:500">${c.code}</td>
+      <td>${c.name}</td>
+      <td class="hide-mobile" style="color:var(--muted)">${c.desc || '-'}</td>
+      <td style="text-align:center"><span class="status-pill status-good">${count} mặt hàng</span></td>
+      <td style="text-align:center">
+        <button style="color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 8px" onclick="editCategory(${c.id})">Sửa</button>
+        <button style="color:#f87171;background:none;border:none;cursor:pointer;padding:4px 8px" onclick="deleteCategory(${c.id})">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('categoryCount').textContent = categories.length;
+  updateCategorySelects();
+}
+
+function updateCategorySelects() {
+  const sel = document.getElementById('productCategory');
+  if (sel) sel.innerHTML = '<option value="">-- Chọn loại --</option>' + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function openCategoryModal(cat) {
+  document.getElementById('categoryModalTitle').textContent = cat ? 'Sửa Loại Hàng' : 'Thêm Loại Hàng';
+  document.getElementById('categoryId').value = cat ? cat.id : '';
+  document.getElementById('categoryCode').value = cat ? cat.code : '';
+  document.getElementById('categoryName').value = cat ? cat.name : '';
+  document.getElementById('categoryDesc').value = cat ? cat.desc : '';
+  openModal('categoryModal');
+}
+
+function editCategory(id) {
+  const c = categories.find(x => x.id === id);
+  if (c) openCategoryModal(c);
+}
+
+function saveCategory() {
+  const id = document.getElementById('categoryId').value;
+  const code = document.getElementById('categoryCode').value.trim();
+  const name = document.getElementById('categoryName').value.trim();
+  const desc = document.getElementById('categoryDesc').value.trim();
+  if (!code || !name) { alert('Vui lòng nhập đầy đủ thông tin!'); return; }
+  
+  if (id) {
+    const c = categories.find(x => x.id === Number(id));
+    if (c) { c.code = code; c.name = name; c.desc = desc; }
+  } else {
+    categories.push({id: Date.now(), code, name, desc});
+  }
+  saveAll();
+  renderCategories();
+  renderProducts();
+  closeModal('categoryModal');
+}
+
+function deleteCategory(id) {
+  if (products.some(p => p.categoryId === id)) {
+    alert('Không thể xóa! Loại hàng này đang có mặt hàng.');
+    return;
+  }
+  if (confirm('Xóa loại hàng này?')) {
+    categories = categories.filter(c => c.id !== id);
+    saveAll();
+    renderCategories();
+  }
+}
+
+// ==================== PRODUCTS ====================
+function renderProducts() {
+  const search = document.getElementById('productSearch').value.toLowerCase();
+  const filtered = products.filter(p => 
+    p.name.toLowerCase().includes(search) || 
+    p.barcode.toLowerCase().includes(search) ||
+    getCategoryName(p.categoryId).toLowerCase().includes(search)
+  );
+  
+  const tbody = document.getElementById('productsTable');
+  tbody.innerHTML = filtered.map(p => {
+    let status = '<span class="status-pill status-good">Còn hàng</span>';
+    if (p.stock === 0) status = '<span class="status-pill status-bad">Hết hàng</span>';
+    else if (p.stock < 10) status = '<span class="status-pill status-warn">Sắp hết</span>';
+    
+    return `<tr class="tbl-row">
+      <td style="font-family:monospace;font-size:12px">${p.barcode}</td>
+      <td style="font-weight:500">${p.name}</td>
+      <td class="hide-mobile"><span class="status-pill" style="background:var(--accent2-soft);color:var(--accent2);border:1px solid var(--accent2-soft)">${getCategoryName(p.categoryId)}</span></td>
+      <td style="text-align:right">${formatMoney(p.buyPrice)}</td>
+      <td style="text-align:right;color:var(--accent);font-weight:500">${formatMoney(p.sellPrice)}</td>
+      <td style="text-align:center;font-weight:700">${p.stock}</td>
+      <td class="hide-mobile" style="text-align:center">${status}</td>
+      <td style="text-align:center">
+        <button style="color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 8px" onclick="editProduct(${p.id})">Sửa</button>
+        <button style="color:#f87171;background:none;border:none;cursor:pointer;padding:4px 8px" onclick="deleteProduct(${p.id})">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('productCount').textContent = products.length;
+}
+
+function openProductModal(prod) {
+  updateCategorySelects();
+  document.getElementById('productModalTitle').textContent = prod ? 'Sửa Hàng Hóa' : 'Thêm Hàng Hóa';
+  document.getElementById('productId').value = prod ? prod.id : '';
+  document.getElementById('productBarcode').value = prod ? prod.barcode : '';
+  document.getElementById('productName').value = prod ? prod.name : '';
+  document.getElementById('productCategory').value = prod ? prod.categoryId : '';
+  document.getElementById('productStock').value = prod ? prod.stock : 0;
+  document.getElementById('productBuyPrice').value = prod ? prod.buyPrice : 0;
+  document.getElementById('productSellPrice').value = prod ? prod.sellPrice : 0;
+  openModal('productModal');
+}
+
+function editProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (p) openProductModal(p);
+}
+
+function saveProduct() {
+  const id = document.getElementById('productId').value;
+  const barcode = document.getElementById('productBarcode').value.trim();
+  const name = document.getElementById('productName').value.trim();
+  const categoryId = Number(document.getElementById('productCategory').value);
+  const stock = Number(document.getElementById('productStock').value) || 0;
+  const buyPrice = Number(document.getElementById('productBuyPrice').value) || 0;
+  const sellPrice = Number(document.getElementById('productSellPrice').value) || 0;
+  
+  if (!barcode || !name || !categoryId) { alert('Vui lòng nhập đầy đủ thông tin!'); return; }
+  
+  if (id) {
+    const p = products.find(x => x.id === Number(id));
+    if (p) { p.barcode = barcode; p.name = name; p.categoryId = categoryId; p.stock = stock; p.buyPrice = buyPrice; p.sellPrice = sellPrice; }
+  } else {
+    if (products.some(p => p.barcode === barcode)) { alert('Mã vạch đã tồn tại!'); return; }
+    products.push({id: Date.now(), barcode, name, categoryId, stock, buyPrice, sellPrice});
+  }
+  saveAll();
+  renderProducts();
+  renderCategories();
+  closeModal('productModal');
+}
+
+function deleteProduct(id) {
+  if (confirm('Xóa mặt hàng này?')) {
+    products = products.filter(p => p.id !== id);
+    saveAll();
+    renderProducts();
+  }
+}
+
+// ==================== CUSTOMERS ====================
+function renderCustomers() {
+  const search = document.getElementById('customerSearch').value.toLowerCase();
+  const filtered = customers.filter(c => 
+    c.name.toLowerCase().includes(search) || 
+    (c.phone && c.phone.includes(search)) ||
+    (c.address && c.address.toLowerCase().includes(search))
+  );
+  
+  const tbody = document.getElementById('customersTable');
+  tbody.innerHTML = filtered.map(c => {
+    const mapUrl = c.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}` : '#';
+    return `<tr class="tbl-row">
+      <td style="font-weight:500">${c.name}</td>
+      <td class="hide-mobile">${c.phone || '-'}</td>
+      <td style="color:var(--muted);max-width:200px">${c.address || '-'}</td>
+      <td style="text-align:right;font-weight:700;color:${c.debt > 0 ? '#f87171' : '#34d399'}">${formatMoney(c.debt)}</td>
+      <td style="text-align:center">
+        ${c.address ? `<a href="${mapUrl}" target="_blank" style="color:var(--accent2);text-decoration:none;font-size:13px">Xem</a>` : '-'}
+      </td>
+      <td style="text-align:center">
+        <button style="color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 8px" onclick="editCustomer(${c.id})">Sửa</button>
+        ${c.debt > 0 ? `<button style="color:#34d399;background:none;border:none;cursor:pointer;padding:4px 8px" onclick="openPayment(${c.id})">Thu tiền</button>` : ''}
+        <button style="color:#f87171;background:none;border:none;cursor:pointer;padding:4px 8px" onclick="deleteCustomer(${c.id})">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+  
+  const totalDebt = customers.reduce((s, c) => s + (c.debt || 0), 0);
+  document.getElementById('totalDebt').textContent = formatMoney(totalDebt);
+}
+
+function updateCustomerSelects() {
+  const sel = document.getElementById('orderCustomer');
+  if (sel) sel.innerHTML = '<option value="">-- Chọn khách --</option>' + customers.map(c => `<option value="${c.id}">${c.name}${c.debt > 0 ? ' (Nợ: ' + formatMoney(c.debt) + ')' : ''}</option>`).join('');
+}
+
+function openCustomerModal(cust) {
+  document.getElementById('customerModalTitle').textContent = cust ? 'Sửa Khách Hàng' : 'Thêm Khách Hàng';
+  document.getElementById('customerId').value = cust ? cust.id : '';
+  document.getElementById('customerName').value = cust ? cust.name : '';
+  document.getElementById('customerPhone').value = cust ? cust.phone : '';
+  document.getElementById('customerAddress').value = cust ? cust.address : '';
+  document.getElementById('customerDebt').value = cust ? cust.debt : 0;
+  document.getElementById('customerNote').value = cust ? cust.note : '';
+  openModal('customerModal');
+}
+
+function editCustomer(id) {
+  const c = customers.find(x => x.id === id);
+  if (c) openCustomerModal(c);
+}
+
+function saveCustomer() {
+  const id = document.getElementById('customerId').value;
+  const name = document.getElementById('customerName').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
+  const address = document.getElementById('customerAddress').value.trim();
+  const debt = Number(document.getElementById('customerDebt').value) || 0;
+  const note = document.getElementById('customerNote').value.trim();
+  
+  if (!name) { alert('Vui lòng nhập tên khách hàng!'); return; }
+  
+  if (id) {
+    const c = customers.find(x => x.id === Number(id));
+    if (c) { c.name = name; c.phone = phone; c.address = address; c.debt = debt; c.note = note; }
+  } else {
+    customers.push({id: Date.now(), name, phone, address, debt, note});
+  }
+  saveAll();
+  renderCustomers();
+  updateCustomerSelects();
+  closeModal('customerModal');
+}
+
+function deleteCustomer(id) {
+  const c = customers.find(x => x.id === id);
+  if (c && c.debt > 0) {
+    alert('Không thể xóa! Khách hàng này còn công nợ.');
+    return;
+  }
+  if (confirm('Xóa khách hàng này?')) {
+    customers = customers.filter(c => c.id !== id);
+    saveAll();
+    renderCustomers();
+    updateCustomerSelects();
+  }
+}
+
+// Payment
+function openPayment(customerId) {
+  const c = customers.find(x => x.id === customerId);
+  if (!c) return;
+  document.getElementById('paymentCustomerId').value = c.id;
+  document.getElementById('paymentCustomerName').textContent = c.name;
+  document.getElementById('paymentCurrentDebt').textContent = formatMoney(c.debt);
+  document.getElementById('paymentAmount').value = Math.min(c.debt, 0);
+  openModal('paymentModal');
+}
+
+function processPayment() {
+  const id = Number(document.getElementById('paymentCustomerId').value);
+  const amount = Number(document.getElementById('paymentAmount').value) || 0;
+  if (amount <= 0) { alert('Vui lòng nhập số tiền thu!'); return; }
+  
+  const c = customers.find(x => x.id === id);
+  if (c) {
+    c.debt = Math.max(0, c.debt - amount);
+    saveAll();
+    renderCustomers();
+    updateCustomerSelects();
+    closeModal('paymentModal');
+    alert('Đã thu ' + formatMoney(amount) + '. Công nợ còn lại: ' + formatMoney(c.debt));
+  }
+}
+
+// ==================== ORDERS ====================
+let orderItemCounter = 0;
+
+function renderOrders() {
+  const tbody = document.getElementById('ordersTable');
+  const sorted = [...orders].sort((a, b) => new Date(b.date) - new Date(a.date));
+  tbody.innerHTML = sorted.map(o => {
+    const debt = o.total - o.discount - o.paid;
+    return `<tr class="tbl-row">
+      <td style="font-family:monospace;font-size:12px">${o.code}</td>
+      <td>${o.date}</td>
+      <td>${getCustomerName(o.customerId)}</td>
+      <td style="text-align:right;font-weight:500">${formatMoney(o.total)}</td>
+      <td class="hide-mobile" style="text-align:right;color:#f87171">${formatMoney(o.discount)}</td>
+      <td class="hide-mobile" style="text-align:right;color:#34d399">${formatMoney(o.paid)}</td>
+      <td style="text-align:right;font-weight:700;color:${debt > 0 ? '#f87171' : '#34d399'}">${formatMoney(Math.max(0, debt))}</td>
+      <td class="hide-mobile" style="color:var(--muted);max-width:150px;font-size:12px">${o.note || '-'}</td>
+      <td style="text-align:center">
+        <button style="color:#f87171;background:none;border:none;cursor:pointer;padding:4px 8px" onclick="deleteOrder(${o.id})">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('orderCount').textContent = orders.length;
+}
+
+function openOrderModal() {
+  updateCustomerSelects();
+  document.getElementById('orderModalTitle').textContent = 'Tạo Đơn Bán';
+  document.getElementById('orderId').value = '';
+  document.getElementById('orderDate').value = todayStr();
+  document.getElementById('orderCustomer').value = '';
+  document.getElementById('orderDiscount').value = 0;
+  document.getElementById('orderPaid').value = 0;
+  document.getElementById('orderNote').value = '';
+  document.getElementById('orderItems').innerHTML = '';
+  orderItemCounter = 0;
+  addOrderItem();
+  calculateOrderTotal();
+  openModal('orderModal');
+}
+
+function addOrderItem() {
+  orderItemCounter++;
+  const container = document.getElementById('orderItems');
+  const div = document.createElement('div');
+  div.className = 'order-item';
+  div.id = 'item-' + orderItemCounter;
+  div.style.display = 'flex';
+  div.style.gap = '8px';
+  div.style.alignItems = 'center';
+  div.innerHTML = `
+    <select class="input-field item-product" style="flex:1" onchange="updateItemPrice(this)">
+      <option value="">-- Chọn hàng --</option>
+      ${products.map(p => `<option value="${p.id}" data-price="${p.sellPrice}" data-stock="${p.stock}">${p.name} (Tồn: ${p.stock})</option>`).join('')}
+    </select>
+    <input type="number" class="input-field item-qty" style="width:70px" value="1" min="1" placeholder="SL" oninput="calculateOrderTotal()">
+    <input type="number" class="input-field item-price" style="width:100px" value="0" placeholder="Giá" oninput="calculateOrderTotal()">
+    <span class="item-total" style="width:100px;text-align:right;font-weight:500;color:var(--accent)">0 đ</span>
+    <button style="color:#f87171;background:none;border:none;cursor:pointer;padding:4px 8px" onclick="removeOrderItem(${orderItemCounter})">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function removeOrderItem(id) {
+  const el = document.getElementById('item-' + id);
+  if (el && document.querySelectorAll('.order-item').length > 1) el.remove();
+  calculateOrderTotal();
+}
+
+function updateItemPrice(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const parent = sel.closest('.order-item');
+  if (opt && opt.value) {
+    parent.querySelector('.item-price').value = opt.dataset.price;
+  }
+  calculateOrderTotal();
+}
+
+function calculateOrderTotal() {
+  let subtotal = 0;
+  document.querySelectorAll('.order-item').forEach(item => {
+    const qty = Number(item.querySelector('.item-qty').value) || 0;
+    const price = Number(item.querySelector('.item-price').value) || 0;
+    const total = qty * price;
+    item.querySelector('.item-total').textContent = formatMoney(total);
+    subtotal += total;
+  });
+  
+  const discount = Number(document.getElementById('orderDiscount').value) || 0;
+  const paid = Number(document.getElementById('orderPaid').value) || 0;
+  const total = Math.max(0, subtotal - discount);
+  const debt = Math.max(0, total - paid);
+  
+  document.getElementById('orderSubtotal').textContent = formatMoney(subtotal);
+  document.getElementById('orderDiscountDisplay').textContent = '-' + formatMoney(discount);
+  document.getElementById('orderTotal').textContent = formatMoney(total);
+  document.getElementById('orderPaidDisplay').textContent = formatMoney(paid);
+  document.getElementById('orderDebtDisplay').textContent = formatMoney(debt);
+}
+
+function saveOrder() {
+  const customerId = Number(document.getElementById('orderCustomer').value);
+  const date = document.getElementById('orderDate').value;
+  const discount = Number(document.getElementById('orderDiscount').value) || 0;
+  const paid = Number(document.getElementById('orderPaid').value) || 0;
+  const note = document.getElementById('orderNote').value.trim();
+  
+  if (!customerId) { alert('Vui lòng chọn khách hàng!'); return; }
+  if (!date) { alert('Vui lòng chọn ngày!'); return; }
+  
+  const items = [];
+  let subtotal = 0;
+  let hasError = false;
+  
+  document.querySelectorAll('.order-item').forEach(item => {
+    const productId = Number(item.querySelector('.item-product').value);
+    const qty = Number(item.querySelector('.item-qty').value) || 0;
+    const price = Number(item.querySelector('.item-price').value) || 0;
+    
+    if (!productId || qty <= 0) return;
+    
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    if (qty > product.stock) {
+      alert('Sản phẩm "' + product.name + '" chỉ còn ' + product.stock + ' trong kho!');
+      hasError = true;
+      return;
+    }
+    
+    items.push({productId, qty, price, name: product.name});
+    subtotal += qty * price;
+  });
+  
+  if (hasError) return;
+  if (items.length === 0) { alert('Vui lòng thêm ít nhất một mặt hàng!'); return; }
+  
+  const total = Math.max(0, subtotal - discount);
+  const debt = Math.max(0, total - paid);
+  const code = 'DH' + String(orders.length + 1).padStart(4, '0');
+  
+  // Update stock
+  items.forEach(item => {
+    const p = products.find(x => x.id === item.productId);
+    if (p) p.stock -= item.qty;
+  });
+  
+  // Update customer debt
+  const cust = customers.find(c => c.id === customerId);
+  if (cust) cust.debt = (cust.debt || 0) + debt;
+  
+  orders.push({
+    id: Date.now(),
+    code,
+    date,
+    customerId,
+    items,
+    subtotal,
+    discount,
+    total,
+    paid,
+    debt,
+    note
+  });
+  
+  saveAll();
+  renderOrders();
+  renderProducts();
+  renderCustomers();
+  updateCustomerSelects();
+  closeModal('orderModal');
+  alert('Đã tạo đơn hàng ' + code + ' thành công!');
+}
+
+function deleteOrder(id) {
+  if (!confirm('Xóa đơn hàng này? Tồn kho và công nợ sẽ được hoàn lại!')) return;
+  
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  
+  // Restore stock
+  o.items.forEach(item => {
+    const p = products.find(x => x.id === item.productId);
+    if (p) p.stock += item.qty;
+  });
+  
+  // Restore customer debt
+  const cust = customers.find(c => c.id === o.customerId);
+  if (cust) cust.debt = Math.max(0, (cust.debt || 0) - o.debt);
+  
+  orders = orders.filter(x => x.id !== id);
+  saveAll();
+  renderOrders();
+  renderProducts();
+  renderCustomers();
+  updateCustomerSelects();
+}
+
+// ==================== STATS ====================
+function initStatsSelects() {
+  const monthSel = document.getElementById('statsMonth');
+  const yearSel = document.getElementById('statsYear');
+  const now = new Date();
+  
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = 'Tháng ' + m;
+    if (m === now.getMonth() + 1) opt.selected = true;
+    monthSel.appendChild(opt);
+  }
+  
+  for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === now.getFullYear()) opt.selected = true;
+    yearSel.appendChild(opt);
+  }
+}
+
+function renderStats() {
+  const month = Number(document.getElementById('statsMonth').value);
+  const year = Number(document.getElementById('statsYear').value);
+  
+  const monthOrders = orders.filter(o => {
+    const d = new Date(o.date);
+    return d.getMonth() + 1 === month && d.getFullYear() === year;
+  });
+  
+  // Revenue
+  const revenue = monthOrders.reduce((s, o) => s + o.total, 0);
+  
+  // Import cost (based on items sold)
+  let importCost = 0;
+  monthOrders.forEach(o => {
+    o.items.forEach(item => {
+      const p = products.find(x => x.id === item.productId);
+      if (p) importCost += p.buyPrice * item.qty;
+    });
+  });
+  
+  // Debt incurred this month
+  const monthDebt = monthOrders.reduce((s, o) => s + o.debt, 0);
+  
+  // Profit estimate
+  const profit = revenue - importCost;
+  
+  document.getElementById('statRevenue').textContent = formatMoney(revenue);
+  document.getElementById('statImport').textContent = formatMoney(importCost);
+  document.getElementById('statDebt').textContent = formatMoney(monthDebt);
+  document.getElementById('statProfit').textContent = formatMoney(profit);
+  
+  // Daily revenue chart
+  renderRevenueChart(monthOrders, month, year);
+  
+  // Import by category chart
+  renderImportChart(monthOrders);
+}
+
+function renderRevenueChart(monthOrders, month, year) {
+  const el = document.getElementById('chartRevenue');
+  if (!el) return;
+  
+  (function init(n) {
+    if (typeof echarts === 'undefined') {
+      if (n < 40) { setTimeout(function(){init(n+1)}, 250); return; }
+      return;
+    }
+    
+    const c = echarts.init(el);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dailyData = new Array(daysInMonth).fill(0);
+    
+    monthOrders.forEach(o => {
+      const d = new Date(o.date).getDate();
+      dailyData[d - 1] += o.total;
+    });
+    
+    c.setOption({
+      backgroundColor: 'transparent',
+      tooltip: {trigger: 'axis', formatter: p => p[0].axisValue + ': ' + formatMoney(p[0].value)},
+      grid: {left: '3%', right: '4%', bottom: '3%', containLabel: true},
+      xAxis: {type: 'category', data: Array.from({length: daysInMonth}, (_, i) => i + 1), axisLabel: {color: '#8b9ab8'}, axisTick: {show: false}},
+      yAxis: {type: 'value', axisLabel: {color: '#8b9ab8', formatter: v => (v / 1000) + 'k'}, splitLine: {lineStyle: {color: 'rgba(139,154,184,.1)'}}},
+      series: [{
+        type: 'line',
+        smooth: true,
+        data: dailyData,
+        itemStyle: {color: '#c9923c'},
+        areaStyle: {color: {type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: 'rgba(201,146,60,0.4)'}, {offset: 1, color: 'rgba(201,146,60,0)'}]}},
+        lineStyle: {width: 2}
+      }]
+    });
+    
+    window.addEventListener('resize', function(){c.resize()});
+  })(0);
+}
+
+function renderImportChart(monthOrders) {
+  const el = document.getElementById('chartImport');
+  if (!el) return;
+  
+  (function init(n) {
+    if (typeof echarts === 'undefined') {
+      if (n < 40) { setTimeout(function(){init(n+1)}, 250); return; }
+    }
+    
+    const c = echarts.init(el);
+    
+    const catData = {};
+    monthOrders.forEach(o => {
+      o.items.forEach(item => {
+        const p = products.find(x => x.id === item.productId);
+        if (p) {
+          const catName = getCategoryName(p.categoryId);
+          catData[catName] = (catData[catName] || 0) + p.buyPrice * item.qty;
+        }
+      });
+    });
+    
+    const data = Object.entries(catData).map(([name, value]) => ({name, value}));
+    
+    c.setOption({
+      backgroundColor: 'transparent',
+      tooltip: {trigger: 'item', formatter: p => p.name + ': ' + formatMoney(p.value)},
+      legend: {bottom: 0, textStyle: {color: '#8b9ab8'}},
+      series: [{
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {borderRadius: 8, borderColor: '#262a3a', borderWidth: 2},
+        label: {show: true, color: '#e8ecf4', formatter: '{b}\n{d}%'},
+        data: data.length > 0 ? data : [{name: 'Chưa có dữ liệu', value: 1}],
+        color: ['#4d8b7a', '#c9923c', '#8b9ab8', '#34d399', '#f87171', '#fbbf24']
+      }]
+    });
+    
+    window.addEventListener('resize', function(){c.resize()});
+  })(0);
+}
+
+// ==================== INITIALIZE ====================
+renderCategories();
+renderProducts();
+renderCustomers();
+renderOrders();
+initStatsSelects();
+</script>
+
+</body>
+</html>
