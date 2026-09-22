@@ -1,0 +1,26 @@
+{
+  "name": "Quản Lý Hàng Tạp Hóa",
+  "short_name": "Tạp Hóa",
+  "description": "Ứng dụng quản lý kho, bán hàng và công nợ cho cửa hàng tạp hóa",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c1f2e",
+  "theme_color": "#c9923c",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3176/3176365.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3176/3176365.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
